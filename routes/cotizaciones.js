@@ -10,6 +10,10 @@ const {
     enviarNotificacionAdmin,
     enviarRespuestaCliente
 } = require('../services/emailService');
+const {
+    generarReporteCotizacion,
+    generarReporteEstadisticas
+} = require('../services/pdfService');
 
 // ========================================
 // POST - CREAR NUEVA COTIZACIÓN
@@ -194,6 +198,38 @@ router.delete('/:id', async (req, res) => {
         });
 
     } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ========================================
+// GET - GENERAR PDF DE UNA COTIZACIÓN
+// ========================================
+
+router.get('/:id/pdf', async (req, res) => {
+    try {
+        await generarReporteCotizacion(req.params.id, res);
+    } catch (error) {
+        console.error('Error generando PDF de cotización:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ========================================
+// GET - GENERAR PDF DE ESTADÍSTICAS
+// ========================================
+
+router.get('/reporte/estadisticas', async (req, res) => {
+    try {
+        await generarReporteEstadisticas(res);
+    } catch (error) {
+        console.error('Error generando PDF de estadísticas:', error);
         res.status(500).json({
             success: false,
             error: error.message
