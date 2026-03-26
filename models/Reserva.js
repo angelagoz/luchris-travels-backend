@@ -8,7 +8,13 @@ const reservaSchema = new mongoose.Schema({
     usuario: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Usuario',
-        required: true
+        required: false,
+        default: null
+    },
+    datosInvitado: {
+        nombre: String,
+        email: String,
+        telefono: String
     },
     crucero: {
         type: mongoose.Schema.Types.ObjectId,

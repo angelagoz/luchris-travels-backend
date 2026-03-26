@@ -66,23 +66,43 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const { usuarioId, cruceroId, fechaSalida, camarote, pasajeros } = req.body;
+        const { usuarioId, cruceroId, fechaSalida, camarote, pasajeros, datosInvitado } = req.body;
 
-        // Validar campos
-        if (!usuarioId || !cruceroId || !fechaSalida || !camarote) {
+        // Validar campos requeridos
+        if (!cruceroId || !fechaSalida || !camarote) {
             return res.status(400).json({
                 success: false,
-                error: 'Faltan campos requeridos'
+                error: 'Faltan campos requeridos: cruceroId, fechaSalida, camarote'
             });
         }
 
-        // Verificar que el usuario existe
-        const usuario = await Usuario.findById(usuarioId);
-        if (!usuario) {
-            return res.status(404).json({
+        // Validar: debe ser usuario O invitado (no ambos)
+        if (!usuarioId && !datosInvitado) {
+            return res.status(400).json({
                 success: false,
-                error: 'Usuario no encontrado'
+                error: 'Debe proporcionar usuarioId o datosInvitado'
             });
+        }
+
+        // Si es invitado, validar datos
+        if (datosInvitado) {
+            if (!datosInvitado.nombre || !datosInvitado.email || !datosInvitado.telefono) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Datos de invitado incompletos (nombre, email, teléfono requeridos)'
+                });
+            }
+        }
+
+        // Si es usuario registrado, verificar que existe
+        if (usuarioId) {
+            const usuario = await Usuario.findById(usuarioId);
+            if (!usuario) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Usuario no encontrado'
+                });
+            }
         }
 
         // Verificar que el crucero existe
@@ -109,7 +129,8 @@ router.post('/', async (req, res) => {
 
         // Crear reserva
         const nuevaReserva = new Reserva({
-            usuario: usuarioId,
+            usuario: usuarioId || null,
+            datosInvitado: datosInvitado || null,
             crucero: cruceroId,
             fechaSalida,
             camarote: {
