@@ -54,6 +54,9 @@ app.use('/api/reservas', require('./routes/reservas'));
 // Rutas de pagos
 app.use('/api/pagos', require('./routes/pagos'));
 
+// Rutas de cotizaciones
+app.use('/api/cotizaciones', require('./routes/cotizaciones'));
+
 // ========================================
 // MANEJO DE ERRORES
 // ========================================
