@@ -5,7 +5,11 @@
 const express = require('express');
 const router = express.Router();
 const Cotizacion = require('../models/Cotizacion');
-const nodemailer = require('nodemailer');
+const {
+    enviarConfirmacionCotizacion,
+    enviarNotificacionAdmin,
+    enviarRespuestaCliente
+} = require('../services/emailService');
 
 // ========================================
 // POST - CREAR NUEVA COTIZACIÓN
@@ -36,12 +40,18 @@ router.post('/', async (req, res) => {
 
         await cotizacion.save();
 
-        // Opcional: Enviar email de confirmación (si está configurado)
+        // Enviar emails (no fallar si hay error)
         try {
-            await enviarEmailConfirmacion(cotizacion);
+            // Email de confirmación al cliente
+            await enviarConfirmacionCotizacion(cotizacion);
+
+            // Email de notificación al admin
+            const emailAdmin = process.env.ADMIN_EMAIL || 'luchristravels@gmail.com';
+            await enviarNotificacionAdmin(cotizacion, emailAdmin);
+
         } catch (emailError) {
-            console.log('⚠️ Error enviando email:', emailError.message);
-            // No fallar si el email no se envía
+            console.log('⚠️ Error enviando emails:', emailError.message);
+            // Continuar aunque falle el email
         }
 
         res.status(201).json({
@@ -139,6 +149,16 @@ router.put('/:id', async (req, res) => {
             });
         }
 
+        // Enviar email si hay respuesta
+        if (respuesta && cotizacion.respuesta && cotizacion.respuesta.contenido) {
+            try {
+                await enviarRespuestaCliente(cotizacion);
+                console.log(`✅ Email de respuesta enviado a: ${cotizacion.email}`);
+            } catch (emailError) {
+                console.log('⚠️ Error enviando email de respuesta:', emailError.message);
+            }
+        }
+
         res.json({
             success: true,
             mensaje: 'Cotización actualizada',
@@ -180,44 +200,5 @@ router.delete('/:id', async (req, res) => {
         });
     }
 });
-
-// ========================================
-// FUNCIÓN AUXILIAR: ENVIAR EMAIL
-// ========================================
-
-async function enviarEmailConfirmacion(cotizacion) {
-    // Esta función está lista para cuando configures un servicio de email
-    // Por ahora, simplemente logueamos
-    console.log(`📧 Cotización de ${cotizacion.nombre} (${cotizacion.email}) recibida`);
-
-    // Descomenta esto cuando tengas configurado un servicio de email (Gmail, SendGrid, etc)
-    /*
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
-    });
-
-    await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: cotizacion.email,
-        subject: 'Cotización Recibida - LUCHRIS TRAVELS',
-        html: `
-            <h2>¡Hola ${cotizacion.nombre}!</h2>
-            <p>Recibimos tu solicitud de cotización correctamente.</p>
-            <p><strong>Detalles:</strong></p>
-            <ul>
-                <li>Fecha: ${cotizacion.fecha}</li>
-                <li>Camarote: ${cotizacion.camarote}</li>
-                <li>Pasajeros: ${cotizacion.pasajeros}</li>
-            </ul>
-            <p>Nos contactaremos con los detalles en breve.</p>
-            <p>Teléfono: +1 (829) 550-2847</p>
-        `
-    });
-    */
-}
 
 module.exports = router;
